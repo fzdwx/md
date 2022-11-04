@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
+	"log"
 	"time"
 )
 
@@ -91,10 +92,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	now := time.Now()
 	m.writeArea, cmd = m.writeArea.Update(msg)
 	cmds = append(cmds, cmd)
-	println(time.Now().Sub(now).String())
 	return m, tea.Sequentially(cmds...)
 }
 
@@ -104,7 +103,10 @@ func (m *model) View() string {
 		return "asdasd"
 	}
 
-	return m.writeArea.View()
+	now := time.Now()
+	view := m.writeArea.View()
+	log.Printf("run textarea view cost: %s", time.Now().Sub(now).String())
+	return view
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
