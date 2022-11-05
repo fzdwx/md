@@ -10,6 +10,5 @@ features:
 
 
 ## 问题
-
 1. glamour 显示不了代码块
 2. textarea.View() 在我的电脑上运行很慢(如果第一帧不调用的话)

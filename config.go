@@ -21,7 +21,7 @@ func parseConfig() *mdConfig {
 	return &cfg
 }
 
-// showWelcomeContent if user don't choose Markdown file then show welcome content
+// showWelcomeContent if user don't choose markdown file then show welcome content
 func (c mdConfig) showWelcomeContent() bool {
 	return c.filePath == ""
 }

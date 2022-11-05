@@ -12,27 +12,20 @@ var welcomeContent string
 
 type errMsg error
 
-type mode int
-
-const (
-	welcome mode = iota + 1
-	normal
-	insert
-)
-
 type model struct {
 	showWelcomeContent bool
 
 	config          *mdConfig
-	mode            mode
 	writeArea       textarea.Model
 	welcomeViewPort viewport.Model
 	err             errMsg
+
+	md *markdown
 }
 
 // initialModel
 func initialModel(config *mdConfig) *model {
-	m := model{mode: normal}
+	m := model{}
 	m.config = config
 	m.showWelcomeContent = config.showWelcomeContent()
 	return &m
@@ -42,31 +35,31 @@ func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
 
 	if m.showWelcomeContent {
-		m.mode = welcome
-		m.welcomeViewPort = viewport.New(10, 10)
-		md := mustToMd(welcomeContent, m.config.style)
+		m.welcomeViewPort = viewport.New(0, 0)
+		md := mustRender(welcomeContent, m.config.style)
 		m.welcomeViewPort.SetContent(md)
 		return nil
+	} else {
+		m.md, m.err = filePathToMd(m.config.filePath)
+		m.writeArea.SetValue(m.md.body)
 	}
-	return textarea.Blink
+
+	return nil
 }
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-	var cmd tea.Cmd
 
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.resize(msg)
 	case tea.KeyMsg:
+		m.showWelcomeContent = false
+
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			return m, tea.Quit
-		}
-
-		if m.mode == welcome {
-			m.mode = insert
-			m.writeArea.SetValue("")
 		}
 
 		switch msg.Type {
@@ -78,8 +71,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		default:
 			if !m.writeArea.Focused() {
-				cmd = m.writeArea.Focus()
-				cmds = append(cmds, cmd)
+				m.writeArea.Focus()
 			}
 		}
 	case errMsg:
@@ -89,11 +81,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	m.writeArea, cmd = m.writeArea.Update(msg)
 	cmds = append(cmds, cmd)
-	return m, tea.Sequentially(cmds...)
+	return m, tea.Batch(cmds...)
 }
 
 func (m *model) View() string {
-	if m.mode == welcome {
+	if m.showWelcomeContent {
 		return m.welcomeViewPort.View()
 	}
 
@@ -102,7 +94,7 @@ func (m *model) View() string {
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
-	if m.mode == welcome {
+	if m.showWelcomeContent {
 		m.welcomeViewPort.Width = msg.Width
 		m.welcomeViewPort.Height = msg.Height
 	}
