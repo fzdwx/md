@@ -6,7 +6,9 @@ import (
 
 type mdConfig struct {
 	filePath string
-	style    string
+	mdStyle  string
+
+	keymap KeyMap
 }
 
 func parseConfig() *mdConfig {
@@ -16,8 +18,9 @@ func parseConfig() *mdConfig {
 		cfg.filePath = args[1]
 	}
 
-	cfg.style = "dark"
+	cfg.mdStyle = "dark"
 
+	cfg.keymap = DefaultKeyMap
 	return &cfg
 }
 

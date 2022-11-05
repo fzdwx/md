@@ -27,10 +27,11 @@ type markdown struct {
 	fileName string
 }
 
-func (m *markdown) mustLoad() {
+func (m *markdown) mustLoadBody() {
 	_ = m.loadBody()
 }
 
+// loadBody from local fs load body
 func (m *markdown) loadBody() error {
 	if m.filePath == "" {
 		return errors.New("filePath not found")

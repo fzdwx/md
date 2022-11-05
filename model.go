@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
@@ -10,10 +11,26 @@ import (
 //go:embed Default.md
 var welcomeContent string
 
+type mode int
+
+func (m mode) String() string {
+	return []string{
+		"command",
+		"insert",
+	}[m]
+}
+
+const (
+	command mode = iota
+	insert
+	normal
+)
+
 type errMsg error
 
 type model struct {
 	showWelcomeContent bool
+	mode               mode
 
 	config          *mdConfig
 	writeArea       textarea.Model
@@ -28,15 +45,17 @@ func initialModel(config *mdConfig) *model {
 	m := model{}
 	m.config = config
 	m.showWelcomeContent = config.showWelcomeContent()
+	m.mode = normal
 	return &m
 }
 
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
+	m.writeArea.KeyMap = m.config.keymap.insertModeKeyMap
 
 	if m.showWelcomeContent {
 		m.welcomeViewPort = viewport.New(0, 0)
-		md := mustRender(welcomeContent, m.config.style)
+		md := mustRender(welcomeContent, m.config.mdStyle)
 		m.welcomeViewPort.SetContent(md)
 		return nil
 	} else {
@@ -55,23 +74,29 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.resize(msg)
 	case tea.KeyMsg:
-		m.showWelcomeContent = false
-
-		switch msg.Type {
-		case tea.KeyCtrlC:
+		switch {
+		case key.Matches(msg, m.config.keymap.Quit):
 			return m, tea.Quit
-		}
-
-		switch msg.Type {
-		case tea.KeyEsc:
+		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
+			if m.mode == normal {
+				m.mode = command
+			}
+		case key.Matches(msg, DefaultKeyMap.ToNormalMode):
+			m.mode = normal
 			if m.writeArea.Focused() {
 				m.writeArea.Blur()
 			}
-		case tea.KeyCtrlC:
-			return m, tea.Quit
-		default:
-			if !m.writeArea.Focused() {
-				m.writeArea.Focus()
+		case key.Matches(msg, DefaultKeyMap.ToInsertMode):
+			if m.mode == normal {
+				m.mode = insert
+				if m.showWelcomeContent {
+					m.showWelcomeContent = false
+				}
+
+				if !m.writeArea.Focused() {
+					m.writeArea.Focus()
+					return m, nil
+				}
 			}
 		}
 	case errMsg:
@@ -79,8 +104,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	m.writeArea, cmd = m.writeArea.Update(msg)
-	cmds = append(cmds, cmd)
+	switch m.mode {
+	case insert:
+		m.writeArea, cmd = m.writeArea.Update(msg)
+		cmds = append(cmds, cmd)
+	case command:
+		// todo handle command
+	}
+
 	return m, tea.Batch(cmds...)
 }
 
