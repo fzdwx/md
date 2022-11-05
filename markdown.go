@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/fzdwx/md/utils"
 	"io"
 	"os"
 	"path"
@@ -14,7 +15,7 @@ func filePathToMd(file string) (*markdown, error) {
 	m.filePath, err = filepath.Abs(file)
 	if err == nil {
 		m.fileName = path.Base(file)
-		err = m.load()
+		err = m.loadBody()
 	}
 
 	return m, err
@@ -27,10 +28,10 @@ type markdown struct {
 }
 
 func (m *markdown) mustLoad() {
-	_ = m.load()
+	_ = m.loadBody()
 }
 
-func (m *markdown) load() error {
+func (m *markdown) loadBody() error {
 	if m.filePath == "" {
 		return errors.New("filePath not found")
 	}
@@ -46,6 +47,6 @@ func (m *markdown) load() error {
 		return err
 	}
 
-	m.body = string(bytes)
+	m.body = utils.CleanCr(string(bytes))
 	return nil
 }
