@@ -7,6 +7,7 @@ import (
 
 type commandLine struct {
 	input textinput.Model
+	cmd   *Command
 }
 
 func newCommandLine() *commandLine {
@@ -46,6 +47,7 @@ func (l *commandLine) hide() {
 
 func (l *commandLine) prompt(command Command) tea.Cmd {
 	l.show()
+	l.cmd = &command
 	l.input.Prompt = command.prompt()
 	return l.focus()
 }

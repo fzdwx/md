@@ -88,12 +88,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.config.keymap.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.config.keymap.SaveFile):
-			if m.md.noName() {
-				return m, m.prompt(&SaveFileCommand{}) // todo 使用 command 模式 获取输入内容
+			if !m.showWelcomeContent {
+				if m.md.noName() {
+					return m, m.prompt(&SaveFileCommand{}) // todo 使用 command 模式 获取输入内容
+				}
+				return m, nil
 			}
-			return m, nil
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
-			if m.mode == normal {
+			if m.mode == normal && !m.showWelcomeContent {
 				m.toCommandMode()
 				return m, m.commandLine.focus()
 			}
@@ -178,5 +180,6 @@ func (m *model) toNormalMode() {
 func (m *model) prompt(cmd Command) tea.Cmd {
 	m.mode = command
 	m.writeArea.Blur()
+	m.refreshStatusLine()
 	return m.commandLine.prompt(cmd)
 }
