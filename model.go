@@ -87,6 +87,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case *SaveFileCommand:
 			m.md.fileName = msg.Value()
 			m.savefile()
+			m.refreshStatusLine()
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
