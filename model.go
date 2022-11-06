@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
 )
@@ -40,6 +41,7 @@ type model struct {
 
 	writeArea       textarea.Model
 	welcomeViewPort viewport.Model
+	commandInput    textinput.Model
 	statusLine      statusLine
 
 	md *markdown // current edit markdown file
@@ -59,6 +61,9 @@ func initialModel(config *mdConfig) *model {
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
 	m.writeArea.KeyMap = m.config.keymap.insertModeKeyMap
+
+	m.commandInput = textinput.New()
+	m.commandInput.Prompt = ""
 
 	if m.showWelcomeContent {
 		m.welcomeViewPort = viewport.New(0, 0)
@@ -85,27 +90,20 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.config.keymap.Quit):
 			return m, tea.Quit
+		case key.Matches(msg, m.config.keymap.SaveFile):
+			if m.md.noName() {
+				//m.prompt() todo 使用 command 模式 获取输入内容
+			}
+			return m, nil
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
-			if m.mode == normal {
-				m.mode = command
-			}
+			m.toCommandMode()
+			return m, m.commandInput.Focus()
 		case key.Matches(msg, DefaultKeyMap.ToNormalMode):
-			m.mode = normal
-			if m.writeArea.Focused() {
-				m.writeArea.Blur()
-			}
+			m.toNormalMode()
 		case key.Matches(msg, DefaultKeyMap.ToInsertMode):
 			if m.mode == normal {
-				m.mode = insert
-				if m.showWelcomeContent {
-					m.showWelcomeContent = false
-				}
-
-				if !m.writeArea.Focused() {
-					m.writeArea.Focus()
-					m.refreshStatusLine()
-					return m, nil
-				}
+				m.toInsertMode()
+				return m, nil
 			}
 		}
 	case errMsg:
@@ -118,7 +116,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.writeArea, cmd = m.writeArea.Update(msg)
 		cmds = append(cmds, cmd)
 	case command:
-		// todo handle command
+		m.commandInput, cmd = m.commandInput.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
 	if !m.showWelcomeContent {
@@ -135,7 +134,7 @@ func (m *model) View() string {
 	}
 
 	view := m.writeArea.View()
-	return view + "\n" + m.statusLine.view() + "\ncommand line"
+	return view + "\n" + m.statusLine.view() + "\n" + m.commandInput.View()
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
@@ -153,4 +152,36 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 func (m *model) refreshStatusLine() {
 	area := m.writeArea
 	m.statusLine.refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
+}
+
+func (m *model) toCommandMode() {
+	if m.mode != normal {
+		return
+	}
+
+	m.mode = command
+	m.commandInput.SetValue("")
+	m.commandInput.Prompt = ":"
+	m.commandInput.SetCursorMode(textinput.CursorBlink)
+	m.refreshStatusLine()
+}
+
+func (m *model) toInsertMode() {
+	m.mode = insert
+	if m.showWelcomeContent {
+		m.showWelcomeContent = false
+	}
+
+	m.writeArea.Focus()
+	m.refreshStatusLine()
+}
+
+func (m *model) toNormalMode() {
+	m.mode = normal
+	m.writeArea.Blur()
+
+	m.commandInput.Blur()
+	m.commandInput.SetValue("")
+	m.commandInput.Prompt = ""
+	m.commandInput.SetCursorMode(textinput.CursorHide)
 }

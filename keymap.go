@@ -12,6 +12,8 @@ type KeyMap struct {
 	ToCommandMode    key.Binding     // to normal mode
 	ToInsertMode     key.Binding     // to insert mode , edit file
 	insertModeKeyMap textarea.KeyMap // insert mode key map(write area key map)
+
+	SaveFile key.Binding // save file to disk
 }
 
 var DefaultKeyMap = KeyMap{
@@ -20,4 +22,6 @@ var DefaultKeyMap = KeyMap{
 	ToInsertMode:     key.NewBinding(key.WithKeys("i")),
 	ToCommandMode:    key.NewBinding(key.WithKeys(":")),
 	insertModeKeyMap: textarea.DefaultKeyMap,
+
+	SaveFile: key.NewBinding(key.WithKeys(tea.KeyCtrlS.String())),
 }

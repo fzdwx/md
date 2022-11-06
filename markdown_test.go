@@ -19,3 +19,11 @@ func Test_filePathToMd2(t *testing.T) {
 		t.Fatal(file, " loadBody to markdown fail:", err)
 	}
 }
+
+func TestNoname(t *testing.T) {
+	md := defaultMd()
+
+	if !md.noName() {
+		t.Fatal("noName is not expected")
+	}
+}

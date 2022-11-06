@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 )
 
+const (
+	UNKNOWN = "UNKNOWN"
+)
+
 func filePathToMd(file string) (*markdown, error) {
 	if file == "" {
 		return defaultMd(), nil
@@ -36,7 +40,7 @@ func defaultMd() *markdown {
 
 func defaultName(filename string) string {
 	if filename == "" {
-		return "UNKNOWN"
+		return UNKNOWN
 	}
 	return filename
 }
@@ -71,4 +75,8 @@ func (m *markdown) loadBody() error {
 
 	m.body = utils.CleanCr(string(bytes))
 	return nil
+}
+
+func (m *markdown) noName() bool {
+	return m.fileName == "" || m.fileName == UNKNOWN
 }
