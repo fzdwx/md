@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/fzdwx/md/utils"
+	"github.com/gookit/goutil/fsutil"
 	"io"
 	"os"
 	"path"
@@ -79,4 +80,12 @@ func (m *markdown) loadBody() error {
 
 func (m *markdown) noName() bool {
 	return m.fileName == "" || m.fileName == UNKNOWN
+}
+
+func (m *markdown) save() error {
+	if m.filePath == "" {
+		m.filePath = m.fileName
+	}
+
+	return fsutil.WriteFile(m.filePath, m.body, 0666, fsutil.FsCWTFlags)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/fzdwx/md/icon"
 	"github.com/fzdwx/md/theme"
 )
 
@@ -40,11 +41,12 @@ func (l *statusLine) refresh(md *markdown, width int, height int, mode mode, row
 func (l *statusLine) view() string {
 	style := l.config.statusLineStyle
 
-	return fmt.Sprintf("%s %s %s %s %s",
+	return fmt.Sprintf("%s %s %s %s %s %s",
 		style.modeStyle.Render(l.mode.String()),
 		style.fileNameStyle.Render(l.md.fileName),
 		fmt.Sprintf("(%d:%d)", l.row, l.col),
 		fmt.Sprintf("(%d:%d)", l.width, l.height),
 		fmt.Sprintf("total:%d", l.lineCount),
+		icon.Markdown,
 	)
 }

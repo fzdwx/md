@@ -1,0 +1,5 @@
+package icon
+
+const (
+	Markdown = ``
+)

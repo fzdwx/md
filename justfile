@@ -12,8 +12,11 @@ term:
 run:
     go run .
 
-
-
 update:
   go get -u
   go mod tidy -v
+
+gif:
+    vhs < ./examples/example.tape
+    rm -rf md
+    rm -rf qwe.md

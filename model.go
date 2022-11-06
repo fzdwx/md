@@ -54,7 +54,7 @@ func initialModel(config *mdConfig) *model {
 	m.mode = normal
 	m.md = defaultMd()
 	m.statusLine = &statusLine{config: config}
-	m.commandLine = newCommandLine()
+	m.commandLine = newCommandLine(config)
 	return &m
 }
 
@@ -81,6 +81,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case Command:
+		m.toNormalMode()
+		switch msg.(type) {
+		case *SaveFileCommand:
+			m.md.fileName = msg.Value()
+			m.savefile()
+			return m, nil
+		}
 	case tea.WindowSizeMsg:
 		m.resize(msg)
 	case tea.KeyMsg:
@@ -92,6 +100,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.md.noName() {
 					return m, m.prompt(&SaveFileCommand{}) // todo 使用 command 模式 获取输入内容
 				}
+				m.savefile()
 				return m, nil
 			}
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
@@ -150,11 +159,6 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 	m.writeArea.SetHeight(msg.Height - 2)
 }
 
-func (m *model) refreshStatusLine() {
-	area := m.writeArea
-	m.statusLine.refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
-}
-
 func (m *model) toCommandMode() {
 	m.mode = command
 	m.commandLine.show()
@@ -182,4 +186,18 @@ func (m *model) prompt(cmd Command) tea.Cmd {
 	m.writeArea.Blur()
 	m.refreshStatusLine()
 	return m.commandLine.prompt(cmd)
+}
+
+func (m *model) hideCommandLine() {
+	m.commandLine.hide()
+}
+
+func (m *model) refreshStatusLine() {
+	area := m.writeArea
+	m.statusLine.refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
+}
+
+func (m *model) savefile() {
+	m.md.body = m.writeArea.Value()
+	m.err = m.md.save()
 }
