@@ -10,21 +10,42 @@ import (
 )
 
 func filePathToMd(file string) (*markdown, error) {
+	if file == "" {
+		return defaultMd(), nil
+	}
+
 	var err error
-	m := &markdown{}
+	m := &markdown{fileName: defaultName("")}
 	m.filePath, err = filepath.Abs(file)
 	if err == nil {
-		m.fileName = path.Base(file)
+		m.fileName = defaultName(path.Base(file))
 		err = m.loadBody()
+		m.hasFile = err == nil
 	}
 
 	return m, err
+}
+
+func defaultMd() *markdown {
+	return &markdown{
+		body:     "",
+		filePath: "",
+		fileName: defaultName(""),
+	}
+}
+
+func defaultName(filename string) string {
+	if filename == "" {
+		return "UNKNOWN"
+	}
+	return filename
 }
 
 type markdown struct {
 	body     string
 	filePath string
 	fileName string
+	hasFile  bool
 }
 
 func (m *markdown) mustLoadBody() {

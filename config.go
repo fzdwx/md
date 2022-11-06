@@ -8,7 +8,8 @@ type mdConfig struct {
 	filePath string
 	mdStyle  string
 
-	keymap KeyMap
+	keymap          KeyMap
+	statusLineStyle statusLineStyle
 }
 
 func parseConfig() *mdConfig {
@@ -21,6 +22,7 @@ func parseConfig() *mdConfig {
 	cfg.mdStyle = "dark"
 
 	cfg.keymap = DefaultKeyMap
+	cfg.statusLineStyle = DefaultStatusLineStyle
 	return &cfg
 }
 

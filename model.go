@@ -15,8 +15,9 @@ type mode int
 
 func (m mode) String() string {
 	return []string{
-		"command",
-		"insert",
+		"COMMAND",
+		"INSERT",
+		"NORMAL",
 	}[m]
 }
 
@@ -29,15 +30,19 @@ const (
 type errMsg error
 
 type model struct {
+	config             *mdConfig
 	showWelcomeContent bool
-	mode               mode
+	err                errMsg
 
-	config          *mdConfig
+	mode   mode // current mode
+	width  int  // the terminal max width
+	height int  // the terminal max height
+
 	writeArea       textarea.Model
 	welcomeViewPort viewport.Model
-	err             errMsg
+	statusLine      statusLine
 
-	md *markdown
+	md *markdown // current edit markdown file
 }
 
 // initialModel
@@ -46,6 +51,8 @@ func initialModel(config *mdConfig) *model {
 	m.config = config
 	m.showWelcomeContent = config.showWelcomeContent()
 	m.mode = normal
+	m.md = defaultMd()
+	m.statusLine = statusLine{config: config}
 	return &m
 }
 
@@ -61,6 +68,7 @@ func (m *model) Init() tea.Cmd {
 	} else {
 		m.md, m.err = filePathToMd(m.config.filePath)
 		m.writeArea.SetValue(m.md.body)
+		m.refreshStatusLine()
 	}
 
 	return nil
@@ -68,8 +76,8 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
-
 	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.resize(msg)
@@ -95,6 +103,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 				if !m.writeArea.Focused() {
 					m.writeArea.Focus()
+					m.refreshStatusLine()
 					return m, nil
 				}
 			}
@@ -112,24 +121,36 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// todo handle command
 	}
 
+	if !m.showWelcomeContent {
+		m.refreshStatusLine()
+	}
+
 	return m, tea.Batch(cmds...)
 }
 
 func (m *model) View() string {
 	if m.showWelcomeContent {
+		m.writeArea.View() // in my pc, need call this method(very slow)
 		return m.welcomeViewPort.View()
 	}
 
 	view := m.writeArea.View()
-	return view
+	return view + "\n" + m.statusLine.view() + "\ncommand line"
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
+	m.width = msg.Width
+	m.height = msg.Height
 	if m.showWelcomeContent {
 		m.welcomeViewPort.Width = msg.Width
 		m.welcomeViewPort.Height = msg.Height
 	}
 
 	m.writeArea.SetWidth(msg.Width)
-	m.writeArea.SetHeight(msg.Height)
+	m.writeArea.SetHeight(msg.Height - 2)
+}
+
+func (m *model) refreshStatusLine() {
+	area := m.writeArea
+	m.statusLine.refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
 }
