@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
 )
@@ -41,8 +40,8 @@ type model struct {
 
 	writeArea       textarea.Model
 	welcomeViewPort viewport.Model
-	commandInput    textinput.Model
-	statusLine      statusLine
+	commandLine     *commandLine
+	statusLine      *statusLine
 
 	md *markdown // current edit markdown file
 }
@@ -54,16 +53,14 @@ func initialModel(config *mdConfig) *model {
 	m.showWelcomeContent = config.showWelcomeContent()
 	m.mode = normal
 	m.md = defaultMd()
-	m.statusLine = statusLine{config: config}
+	m.statusLine = &statusLine{config: config}
+	m.commandLine = newCommandLine()
 	return &m
 }
 
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
 	m.writeArea.KeyMap = m.config.keymap.insertModeKeyMap
-
-	m.commandInput = textinput.New()
-	m.commandInput.Prompt = ""
 
 	if m.showWelcomeContent {
 		m.welcomeViewPort = viewport.New(0, 0)
@@ -92,12 +89,14 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case key.Matches(msg, m.config.keymap.SaveFile):
 			if m.md.noName() {
-				//m.prompt() todo 使用 command 模式 获取输入内容
+				return m, m.prompt(&SaveFileCommand{}) // todo 使用 command 模式 获取输入内容
 			}
 			return m, nil
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
-			m.toCommandMode()
-			return m, m.commandInput.Focus()
+			if m.mode == normal {
+				m.toCommandMode()
+				return m, m.commandLine.focus()
+			}
 		case key.Matches(msg, DefaultKeyMap.ToNormalMode):
 			m.toNormalMode()
 		case key.Matches(msg, DefaultKeyMap.ToInsertMode):
@@ -116,7 +115,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.writeArea, cmd = m.writeArea.Update(msg)
 		cmds = append(cmds, cmd)
 	case command:
-		m.commandInput, cmd = m.commandInput.Update(msg)
+		cmd = m.commandLine.update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -134,7 +133,7 @@ func (m *model) View() string {
 	}
 
 	view := m.writeArea.View()
-	return view + "\n" + m.statusLine.view() + "\n" + m.commandInput.View()
+	return view + "\n" + m.statusLine.view() + "\n" + m.commandLine.view()
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
@@ -155,14 +154,8 @@ func (m *model) refreshStatusLine() {
 }
 
 func (m *model) toCommandMode() {
-	if m.mode != normal {
-		return
-	}
-
 	m.mode = command
-	m.commandInput.SetValue("")
-	m.commandInput.Prompt = ":"
-	m.commandInput.SetCursorMode(textinput.CursorBlink)
+	m.commandLine.show()
 	m.refreshStatusLine()
 }
 
@@ -179,9 +172,11 @@ func (m *model) toInsertMode() {
 func (m *model) toNormalMode() {
 	m.mode = normal
 	m.writeArea.Blur()
+	m.commandLine.hide()
+}
 
-	m.commandInput.Blur()
-	m.commandInput.SetValue("")
-	m.commandInput.Prompt = ""
-	m.commandInput.SetCursorMode(textinput.CursorHide)
+func (m *model) prompt(cmd Command) tea.Cmd {
+	m.mode = command
+	m.writeArea.Blur()
+	return m.commandLine.prompt(cmd)
 }
