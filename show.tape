@@ -40,7 +40,7 @@
 #   Hide                            Hide the subsequent commands from the output
 #   Show                            Show the subsequent commands in the output
 
-Output examples/show.gif
+Output show.gif
 
 Set TypingSpeed 0.2
 Set FontSize 32
@@ -65,8 +65,9 @@ Sleep 0.5
 Type "Hello world" 
 Enter
 Enter
-Type "Md now is preview. think you!"
-
+Type "md now is preview. thank you!"
+Enter
+Type "md is still in the very early state."
 
 # do save file
 Ctrl+S
