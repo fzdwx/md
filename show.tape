@@ -13,7 +13,7 @@ Type "i"
 Sleep 0.5
 
 # Content
-Type "#Hello world"
+Type "# Hello world"
 Enter 2
 Type "`Md is still in the very early state.`"
 Enter 2

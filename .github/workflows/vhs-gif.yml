@@ -14,10 +14,12 @@ jobs:
           cache: true
       - uses: charmbracelet/vhs-action@v1
         with:
-          path: 'show.tape'
+          path: 'qwe.tape'
       - uses: extractions/setup-just@v1
+      - name: set up vhs
+        run: go install github.com/charmbracelet/vhs@latest
       - name: Just run gif
-        run: go install github.com/charmbracelet/vhs@latest && just gif
+        run: just gif
       - uses: stefanzweifel/git-auto-commit-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
