@@ -1,11 +1,8 @@
 name: goreleaser
-
 on:
   push:
-    # run only against tags
     tags:
       - '*'
-
 jobs:
   goreleaser:
     runs-on: ubuntu-latest

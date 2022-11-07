@@ -40,6 +40,7 @@
 #   Hide                            Hide the subsequent commands from the output
 #   Show                            Show the subsequent commands in the output
 
+
 Output show.gif
 
 Set TypingSpeed 0.2
