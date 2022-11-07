@@ -7,8 +7,8 @@ Set Height 1200
 
 Hide
 Type "go build ."
-Sleep 5
 Enter
+Sleep 10
 Type "clear"
 Enter
 Show
