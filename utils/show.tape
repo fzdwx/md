@@ -1,4 +1,4 @@
-Output show.gif
+Output ./utils/show.gif
 
 Set TypingSpeed 0.1
 Set FontSize 32

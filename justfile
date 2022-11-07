@@ -18,6 +18,6 @@ update:
 
 gif:
     go build .
-    vhs < show.tape
+    vhs < ./utils/show.tape
     rm -rf md
     rm -rf qwe.md
