@@ -1,5 +1,6 @@
 Output show.gif
 
+
 Set TypingSpeed 0.2
 Set FontSize 32
 Set Width 2400
