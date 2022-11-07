@@ -106,6 +106,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.savefile()
 				return m, nil
 			}
+		case key.Matches(msg, DefaultKeyMap.PreviewView):
+			m.showPreview = !m.showPreview
+			return m, nil
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
 			//if m.mode == modeNormal && !m.showWelcomeContent {
 			//	m.toCommandMode()
@@ -131,6 +134,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case modeInsert:
 		m.writeArea, cmd = m.writeArea.Update(msg)
 		cmds = append(cmds, cmd)
+
+		m.previewView.SetContent(m.writeArea.Value())
 	case modeCommand:
 		cmd = m.commandLine.update(msg)
 		cmds = append(cmds, cmd)
@@ -145,11 +150,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	buffer := utils.NewStrBuffer()
+
 	if m.showWelcomeContent {
 		m.writeArea.View() // in my pc, need call this method(very slow)
 		buffer.Write(m.previewView.View())
 	} else {
-		buffer.Write(m.writeArea.View()).NewLine().Write(m.statusLine.view())
+		if m.showPreview { // todo 当前只是简单的处理了 要么显示 write 要么显示 preview
+			buffer.Write(m.previewView.View())
+		} else {
+			buffer.Write(m.writeArea.View())
+		}
+		buffer.NewLine().Write(m.statusLine.view())
 	}
 
 	return buffer.NewLine().Write(m.commandLine.view()).String()

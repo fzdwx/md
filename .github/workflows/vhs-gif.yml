@@ -17,7 +17,7 @@ jobs:
           path: 'show.tape'
       - uses: extractions/setup-just@v1
       - name: Just run gif
-        run: just gif
+        run: go install github.com/charmbracelet/vhs@latest && just gif
       - uses: stefanzweifel/git-auto-commit-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}

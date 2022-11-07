@@ -13,11 +13,11 @@ Type "i"
 Sleep 0.5
 
 # Content
-Type "Hello world"
+Type "#Hello world"
 Enter 2
-Type "Md is still in the very early state."
+Type "`Md is still in the very early state.`"
 Enter 2
-Type "So any suggestions for improving the program are welcome. thank you!"
+Type "_So any suggestions for improving the program are welcome. thank you!_"
 
 # do save file
 Ctrl+S
