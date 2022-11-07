@@ -22,11 +22,10 @@ Sleep 0.5
 
 # Content
 Type "Hello world"
-Enter
-Enter
-Type "md now is preview. thank you!"
-Enter
-Type "md is still in the very early state."
+Enter 2
+Type "Md is still in the very early state."
+Enter 2
+Type "So any suggestions for improving the program are welcome. thank you!"
 
 # do save file
 Ctrl+S

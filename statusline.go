@@ -12,6 +12,10 @@ var DefaultStatusLineStyle = statusLineStyle{
 	fileNameStyle: lipgloss.NewStyle().PaddingLeft(1).PaddingRight(1).Foreground(theme.ColorBlank2),
 }
 
+func newStatusLine(config *mdConfig) *statusLine {
+	return &statusLine{config: config}
+}
+
 type statusLine struct {
 	config    *mdConfig
 	row       int

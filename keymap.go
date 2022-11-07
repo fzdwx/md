@@ -14,7 +14,8 @@ type KeyMap struct {
 	InsertModeKeyMap  textarea.KeyMap   // modeInsert mode key map(write area key map)
 	CommandLineKeyMap CommandLineKeyMap // modeCommand line mode key map
 
-	SaveFile key.Binding // save file to disk
+	SaveFile    key.Binding // save file to disk
+	PreviewView key.Binding // open/close preview viewport
 }
 
 type CommandLineKeyMap struct {
@@ -30,5 +31,6 @@ var DefaultKeyMap = KeyMap{
 	CommandLineKeyMap: CommandLineKeyMap{
 		Cr: key.NewBinding(key.WithKeys(tea.KeyEnter.String())),
 	},
-	SaveFile: key.NewBinding(key.WithKeys(tea.KeyCtrlS.String())),
+	SaveFile:    key.NewBinding(key.WithKeys(tea.KeyCtrlS.String())),
+	PreviewView: key.NewBinding(key.WithKeys(tea.KeyCtrlP.String())),
 }

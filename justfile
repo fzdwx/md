@@ -17,6 +17,6 @@ update:
   go mod tidy -v
 
 gif:
-    vhs < ./examples/show.tape
+    vhs < show.tape
     rm -rf md
     rm -rf qwe.md

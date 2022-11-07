@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/fzdwx/md/command"
 	"github.com/fzdwx/md/utils"
@@ -32,18 +31,19 @@ const (
 type errMsg error
 
 type model struct {
-	config             *mdConfig
+	config *mdConfig
+	err    errMsg
+
+	width              int  // the terminal max width
+	height             int  // the terminal max height
+	mode               mode // current mode
 	showWelcomeContent bool
-	err                errMsg
+	showPreview        bool
 
-	mode   mode // current mode
-	width  int  // the terminal max width
-	height int  // the terminal max height
-
-	writeArea       textarea.Model
-	welcomeViewPort viewport.Model
-	commandLine     *commandLine
-	statusLine      *statusLine
+	writeArea   textarea.Model
+	previewView *previewView
+	commandLine *commandLine
+	statusLine  *statusLine
 
 	md *markdown // current edit markdown file
 }
@@ -55,7 +55,8 @@ func initialModel(config *mdConfig) *model {
 	m.showWelcomeContent = config.showWelcomeContent()
 	m.mode = modeNormal
 	m.md = defaultMd()
-	m.statusLine = &statusLine{config: config}
+	m.previewView = newPreviewView(config)
+	m.statusLine = newStatusLine(config)
 	m.commandLine = newCommandLine(config)
 	return &m
 }
@@ -65,9 +66,8 @@ func (m *model) Init() tea.Cmd {
 	m.writeArea.KeyMap = m.config.keymap.InsertModeKeyMap
 
 	if m.showWelcomeContent {
-		m.welcomeViewPort = viewport.New(0, 0)
 		m.md = defaultMd()
-		m.welcomeViewPort.SetContent(mustRender(welcomeContent, m.config.mdStyle))
+		m.previewView.SetContent(welcomeContent)
 		return nil
 	} else {
 		m.md, m.err = filePathToMd(m.config.filePath)
@@ -147,7 +147,7 @@ func (m *model) View() string {
 	buffer := utils.NewStrBuffer()
 	if m.showWelcomeContent {
 		m.writeArea.View() // in my pc, need call this method(very slow)
-		buffer.Write(m.welcomeViewPort.View())
+		buffer.Write(m.previewView.View())
 	} else {
 		buffer.Write(m.writeArea.View()).NewLine().Write(m.statusLine.view())
 	}
@@ -159,8 +159,7 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 	m.width = msg.Width
 	m.height = msg.Height
 	if m.showWelcomeContent {
-		m.welcomeViewPort.Width = msg.Width
-		m.welcomeViewPort.Height = msg.Height - 2
+		m.previewView.Set(msg.Width, msg.Height-2)
 	}
 
 	m.writeArea.SetWidth(msg.Width)
