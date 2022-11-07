@@ -4,13 +4,14 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/fzdwx/md/command"
 )
 
 type commandLine struct {
 	input  textinput.Model
 	config *mdConfig
 
-	cmd Command
+	cmd command.Command
 }
 
 func newCommandLine(config *mdConfig) *commandLine {
@@ -31,10 +32,11 @@ func (l *commandLine) update(msg tea.Msg) tea.Cmd {
 	case tea.KeyMsg:
 		switch {
 		// prompt handle finish, tell main model, do next action.
-		case key.Matches(msg, l.config.keymap.commandLineKeyMap.Cr):
-			l.cmd.setValue(l.input.Value())
+		case key.Matches(msg, l.config.keymap.CommandLineKeyMap.Cr):
+			// todo modeCommand dispatch
+			cmd := l.dispatch()
 			return func() tea.Msg {
-				return l.cmd
+				return cmd
 			}
 		}
 	}
@@ -63,9 +65,24 @@ func (l *commandLine) hide() {
 	l.input.SetCursorMode(textinput.CursorHide)
 }
 
-func (l *commandLine) prompt(command Command) tea.Cmd {
+// prompt focus someone Command,
+// get teh user input and send it to the main ui to execute it.
+func (l *commandLine) prompt(command command.Command) tea.Cmd {
 	l.show()
 	l.cmd = command
-	l.input.Prompt = command.prompt()
+	l.input.Prompt = command.Prompt()
 	return l.focus()
+}
+
+// dispatch user press CommandLineKeyMap.Cr,
+// means that the user has confirmed the input,
+// so we have to dispatch to the specific Command.
+func (l *commandLine) dispatch() command.Command {
+	if l.cmd != nil {
+		l.cmd.SetValue(l.input.Value())
+		return l.cmd
+	}
+
+	// todo dispatch
+	return &command.Unknown{}
 }

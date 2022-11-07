@@ -8,11 +8,11 @@ import (
 
 type KeyMap struct {
 	Quit              key.Binding       // quit program
-	ToNormalMode      key.Binding       // to normal mode
-	ToCommandMode     key.Binding       // to normal mode
-	ToInsertMode      key.Binding       // to insert mode , edit file
-	insertModeKeyMap  textarea.KeyMap   // insert mode key map(write area key map)
-	commandLineKeyMap CommandLineKeyMap // command line mode key map
+	ToNormalMode      key.Binding       // to modeNormal mode
+	ToCommandMode     key.Binding       // to modeNormal mode
+	ToInsertMode      key.Binding       // to modeInsert mode , edit file
+	InsertModeKeyMap  textarea.KeyMap   // modeInsert mode key map(write area key map)
+	CommandLineKeyMap CommandLineKeyMap // modeCommand line mode key map
 
 	SaveFile key.Binding // save file to disk
 }
@@ -25,9 +25,9 @@ var DefaultKeyMap = KeyMap{
 	Quit:             key.NewBinding(key.WithKeys(tea.KeyCtrlC.String())),
 	ToNormalMode:     key.NewBinding(key.WithKeys(tea.KeyEsc.String())),
 	ToInsertMode:     key.NewBinding(key.WithKeys("i")),
-	ToCommandMode:    key.NewBinding(key.WithKeys(":")),
-	insertModeKeyMap: textarea.DefaultKeyMap,
-	commandLineKeyMap: CommandLineKeyMap{
+	ToCommandMode:    key.NewBinding(key.WithKeys(";")),
+	InsertModeKeyMap: textarea.DefaultKeyMap,
+	CommandLineKeyMap: CommandLineKeyMap{
 		Cr: key.NewBinding(key.WithKeys(tea.KeyEnter.String())),
 	},
 	SaveFile: key.NewBinding(key.WithKeys(tea.KeyCtrlS.String())),

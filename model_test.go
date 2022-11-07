@@ -5,10 +5,10 @@ import (
 )
 
 func Test_mode_String(t *testing.T) {
-	if command.String() != "COMMAND" {
+	if modeCommand.String() != "COMMAND" {
 		t.Fatal("error")
 	}
-	if insert.String() != "INSERT" {
+	if modeInsert.String() != "INSERT" {
 		t.Fatal("error")
 	}
 }

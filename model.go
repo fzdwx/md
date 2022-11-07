@@ -6,6 +6,8 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	"github.com/charmbracelet/bubbletea"
+	"github.com/fzdwx/md/command"
+	"github.com/fzdwx/md/utils"
 )
 
 //go:embed Default.md
@@ -22,9 +24,9 @@ func (m mode) String() string {
 }
 
 const (
-	command mode = iota
-	insert
-	normal
+	modeCommand mode = iota
+	modeInsert
+	modeNormal
 )
 
 type errMsg error
@@ -51,7 +53,7 @@ func initialModel(config *mdConfig) *model {
 	m := model{}
 	m.config = config
 	m.showWelcomeContent = config.showWelcomeContent()
-	m.mode = normal
+	m.mode = modeNormal
 	m.md = defaultMd()
 	m.statusLine = &statusLine{config: config}
 	m.commandLine = newCommandLine(config)
@@ -60,12 +62,12 @@ func initialModel(config *mdConfig) *model {
 
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
-	m.writeArea.KeyMap = m.config.keymap.insertModeKeyMap
+	m.writeArea.KeyMap = m.config.keymap.InsertModeKeyMap
 
 	if m.showWelcomeContent {
 		m.welcomeViewPort = viewport.New(0, 0)
-		md := mustRender(welcomeContent, m.config.mdStyle)
-		m.welcomeViewPort.SetContent(md)
+		m.md = defaultMd()
+		m.welcomeViewPort.SetContent(mustRender(welcomeContent, m.config.mdStyle))
 		return nil
 	} else {
 		m.md, m.err = filePathToMd(m.config.filePath)
@@ -81,10 +83,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
-	case Command:
+	case command.Command:
 		m.toNormalMode()
 		switch msg.(type) {
-		case *SaveFileCommand:
+		case *command.SaveFile:
 			m.md.fileName = msg.Value()
 			m.savefile()
 			m.refreshStatusLine()
@@ -99,20 +101,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.config.keymap.SaveFile):
 			if !m.showWelcomeContent {
 				if m.md.noName() {
-					return m, m.prompt(&SaveFileCommand{}) // todo 使用 command 模式 获取输入内容
+					return m, m.prompt(&command.SaveFile{}) // todo 使用 modeCommand 模式 获取输入内容
 				}
 				m.savefile()
 				return m, nil
 			}
 		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
-			if m.mode == normal && !m.showWelcomeContent {
-				m.toCommandMode()
-				return m, m.commandLine.focus()
-			}
+			//if m.mode == modeNormal && !m.showWelcomeContent {
+			//	m.toCommandMode()
+			//	return m, m.commandLine.focus()
+			//}
+			// allow in welcome view use command mode
+			m.toCommandMode()
+			return m, m.commandLine.focus()
 		case key.Matches(msg, DefaultKeyMap.ToNormalMode):
 			m.toNormalMode()
 		case key.Matches(msg, DefaultKeyMap.ToInsertMode):
-			if m.mode == normal {
+			if m.mode == modeNormal {
 				m.toInsertMode()
 				return m, nil
 			}
@@ -123,10 +128,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.mode {
-	case insert:
+	case modeInsert:
 		m.writeArea, cmd = m.writeArea.Update(msg)
 		cmds = append(cmds, cmd)
-	case command:
+	case modeCommand:
 		cmd = m.commandLine.update(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -139,13 +144,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
+	buffer := utils.NewStrBuffer()
 	if m.showWelcomeContent {
 		m.writeArea.View() // in my pc, need call this method(very slow)
-		return m.welcomeViewPort.View()
+		buffer.Write(m.welcomeViewPort.View())
+	} else {
+		buffer.Write(m.writeArea.View()).NewLine().Write(m.statusLine.view())
 	}
 
-	view := m.writeArea.View()
-	return view + "\n" + m.statusLine.view() + "\n" + m.commandLine.view()
+	return buffer.NewLine().Write(m.commandLine.view()).String()
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
@@ -153,7 +160,7 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 	m.height = msg.Height
 	if m.showWelcomeContent {
 		m.welcomeViewPort.Width = msg.Width
-		m.welcomeViewPort.Height = msg.Height
+		m.welcomeViewPort.Height = msg.Height - 2
 	}
 
 	m.writeArea.SetWidth(msg.Width)
@@ -161,13 +168,13 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 }
 
 func (m *model) toCommandMode() {
-	m.mode = command
+	m.mode = modeCommand
 	m.commandLine.show()
 	m.refreshStatusLine()
 }
 
 func (m *model) toInsertMode() {
-	m.mode = insert
+	m.mode = modeInsert
 	if m.showWelcomeContent {
 		m.showWelcomeContent = false
 	}
@@ -177,13 +184,13 @@ func (m *model) toInsertMode() {
 }
 
 func (m *model) toNormalMode() {
-	m.mode = normal
+	m.mode = modeNormal
 	m.writeArea.Blur()
 	m.commandLine.hide()
 }
 
-func (m *model) prompt(cmd Command) tea.Cmd {
-	m.mode = command
+func (m *model) prompt(cmd command.Command) tea.Cmd {
+	m.mode = modeCommand
 	m.writeArea.Blur()
 	m.refreshStatusLine()
 	return m.commandLine.prompt(cmd)

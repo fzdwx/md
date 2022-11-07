@@ -62,10 +62,10 @@ Type "i"
 Sleep 0.5
 
 # Content
-Type "Hello world"
+Type "Hello world" 
 Enter
 Enter
-Type "Md now is close preview. think you!"
+Type "Md now is preview. think you!"
 
 
 # do save file

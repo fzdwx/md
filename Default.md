@@ -8,4 +8,4 @@ Enjoin it !
 fmt.Println("hello world")
 ```
 
-**Now is close preview.**
+**Now is preview.**
