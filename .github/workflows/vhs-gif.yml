@@ -1,0 +1,30 @@
+name: vhs
+on:
+  push:
+    paths:
+      - show.tape
+jobs:
+  vhs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.19.3'
+          cache: true
+      - uses: charmbracelet/vhs-action@v1
+        with:
+          path: 'show.tape'
+      - uses: extractions/setup-just@v1
+      - name: Just run gif
+        run: just gif
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          commit_message: Update generated VHS GIF
+          branch: main
+          commit_user_name: vhs-action 📼
+          commit_user_email: actions@github.com
+          commit_author: vhs-action 📼 <actions@github.com>
+          file_pattern: '*.gif'

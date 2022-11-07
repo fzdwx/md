@@ -5,14 +5,6 @@ Set FontSize 32
 Set Width 2400
 Set Height 1200
 
-Hide
-Type "go build ."
-Enter
-Sleep 10
-Type "clear"
-Enter
-Show
-
 Type "./md"
 Enter
 Sleep 2
@@ -43,4 +35,4 @@ Show
 Type "./md qwe.md"
 Enter
 
-Sleep 5s
+Sleep 3s

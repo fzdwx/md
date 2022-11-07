@@ -17,6 +17,7 @@ update:
   go mod tidy -v
 
 gif:
+    go build .
     vhs < show.tape
     rm -rf md
     rm -rf qwe.md
