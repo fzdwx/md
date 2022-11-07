@@ -2,4 +2,4 @@
 
 tui markdown editor.
 
-![show](utils/show.gif)
+![show](../utils/show.gif)
