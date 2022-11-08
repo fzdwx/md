@@ -2,8 +2,8 @@ Output ./utils/show.gif
 
 Set TypingSpeed 0.1
 Set FontSize 32
-Set Width 2000
-Set Height 1000
+Set Width 3840
+Set Height 0011
 
 Type "./md"
 Enter
@@ -15,10 +15,9 @@ Sleep 0.5
 # Content
 Type "# Hello world"
 Enter 2
+Ctrl+P
 Type "`Md is still in the very early state.`"
 Enter 2
 Type "_So any suggestions for improving the program are welcome. thank you!_"
-
-Ctrl+P
 
 Sleep 5s

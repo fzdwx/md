@@ -2,9 +2,11 @@
 
 - [ ] 能一边写一边预览 markdown 文件
     - [x] 当前支持了简单的切换模式，即要么 `write` 要么 `preview`
+- [ ] preview 中也能移动
 - [ ] 为保存文件提供一个 错误/成功 提示
 - [ ] 在`NORAML`模式下也能移动位置
 - [ ] 多 buffer 切换
+- [ ] markdown word wrap 好像没有效果？
 
 ---
 

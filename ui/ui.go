@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/fzdwx/md/command"
 	"github.com/fzdwx/md/config"
 	"github.com/fzdwx/md/ui/common/doc"
@@ -54,6 +55,7 @@ func New(config *config.Context) *model {
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
 	m.writeArea.KeyMap = m.config.Keymap.InsertModeKeyMap
+	m.writeArea.CharLimit = -1
 
 	if m.showWelcomeContent {
 		m.md = doc.DefaultMd()
@@ -84,7 +86,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 	case tea.WindowSizeMsg:
-		m.resize(msg)
+		m.setsize(msg)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.config.Keymap.Quit):
@@ -142,14 +144,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
+	m.resize()
 	if m.showWelcomeContent {
 		return m.welcomeContentView()
 	}
 
 	buffer := utils.NewStrBuffer()
 
-	if m.showPreview { // todo 当前只是简单的处理了 要么显示 write 要么显示 preview
-		buffer.Write(m.previewView.View())
+	if m.showPreview { // todo 当前只是简单的处理, 默认是左右视图
+		if m.width >= 160 {
+			val := lipgloss.JoinHorizontal(lipgloss.Top,
+				lipgloss.NewStyle().AlignHorizontal(lipgloss.Right).Render(m.writeArea.View()),
+				lipgloss.NewStyle().AlignHorizontal(lipgloss.Left).Render(m.previewView.View()),
+			)
+			buffer.Write(val)
+		} else {
+			buffer.Write(m.previewView.View())
+		}
 	} else {
 		buffer.Write(m.writeArea.View())
 	}
@@ -162,14 +173,24 @@ func (m *model) View() string {
 		String()
 }
 
-func (m *model) resize(msg tea.WindowSizeMsg) {
+func (m *model) resize() {
+	set := func(width, height int) {
+		m.previewView.Set(width, height)
+		m.writeArea.SetWidth(width)
+		m.writeArea.SetHeight(height)
+	}
+
+	midWidth := m.width / 2
+	if m.showPreview && m.width >= 160 {
+		set(midWidth, m.height-2)
+	} else {
+		set(m.width, m.height-2)
+	}
+}
+
+func (m *model) setsize(msg tea.WindowSizeMsg) {
 	m.width = msg.Width
 	m.height = msg.Height
-
-	m.previewView.Set(msg.Width, msg.Height-2)
-
-	m.writeArea.SetWidth(msg.Width)
-	m.writeArea.SetHeight(msg.Height - 2)
 }
 
 func (m *model) toCommandMode() {
@@ -182,6 +203,7 @@ func (m *model) toInsertMode() {
 	m.mode = mode.Insert
 	if m.showWelcomeContent {
 		m.showWelcomeContent = false
+		m.previewView.SetContent("")
 	}
 
 	m.writeArea.Focus()
