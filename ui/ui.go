@@ -90,13 +90,15 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.config.Keymap.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, m.config.Keymap.SaveFile):
-			if !m.showWelcomeContent {
-				if m.md.NoName() {
-					return m, m.prompt(&command.SaveFile{}) // todo 使用 modeCommand 模式 获取输入内容
-				}
-				m.savefile()
+			if m.showWelcomeContent {
 				return m, nil
 			}
+
+			if m.md.NoName() {
+				return m, m.prompt(&command.SaveFile{}) // todo 使用 modeCommand 模式 获取输入内容
+			}
+			m.savefile()
+			return m, nil
 		case key.Matches(msg, m.config.Keymap.PreviewView):
 			m.showPreview = !m.showPreview
 			return m, nil
@@ -140,21 +142,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
-	buffer := utils.NewStrBuffer()
-
 	if m.showWelcomeContent {
-		m.writeArea.View() // in my pc, need call this method(very slow)
-		buffer.Write(m.previewView.View())
-	} else {
-		if m.showPreview { // todo 当前只是简单的处理了 要么显示 write 要么显示 preview
-			buffer.Write(m.previewView.View())
-		} else {
-			buffer.Write(m.writeArea.View())
-		}
-		buffer.NewLine().Write(m.statusLine.View())
+		return m.welcomeContentView()
 	}
 
-	return buffer.NewLine().Write(m.commandLine.View()).String()
+	buffer := utils.NewStrBuffer()
+
+	if m.showPreview { // todo 当前只是简单的处理了 要么显示 write 要么显示 preview
+		buffer.Write(m.previewView.View())
+	} else {
+		buffer.Write(m.writeArea.View())
+	}
+
+	return buffer.
+		NewLine().
+		Write(m.statusLine.View()).
+		NewLine().
+		Write(m.commandLine.View()).
+		String()
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
@@ -208,4 +213,13 @@ func (m *model) refreshStatusLine() {
 func (m *model) savefile() {
 	m.md.Body = m.writeArea.Value()
 	m.err = m.md.Save()
+}
+
+func (m *model) welcomeContentView() string {
+	m.writeArea.View()
+	return utils.NewStrBuffer().
+		Write(m.previewView.View()).
+		NewLine().
+		Write(m.commandLine.View()).
+		String()
 }
