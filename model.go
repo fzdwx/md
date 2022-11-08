@@ -72,6 +72,7 @@ func (m *model) Init() tea.Cmd {
 	} else {
 		m.md, m.err = filePathToMd(m.config.filePath)
 		m.writeArea.SetValue(m.md.body)
+		m.previewView.SetContent(m.md.body)
 		m.refreshStatusLine()
 	}
 
@@ -169,9 +170,8 @@ func (m *model) View() string {
 func (m *model) resize(msg tea.WindowSizeMsg) {
 	m.width = msg.Width
 	m.height = msg.Height
-	if m.showWelcomeContent {
-		m.previewView.Set(msg.Width, msg.Height-2)
-	}
+
+	m.previewView.Set(msg.Width, msg.Height-2)
 
 	m.writeArea.SetWidth(msg.Width)
 	m.writeArea.SetHeight(msg.Height - 2)
