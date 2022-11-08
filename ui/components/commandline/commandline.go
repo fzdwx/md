@@ -1,21 +1,22 @@
-package main
+package commandline
 
 import (
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fzdwx/md/command"
+	"github.com/fzdwx/md/config"
 )
 
-type commandLine struct {
+type Bar struct {
 	input  textinput.Model
-	config *mdConfig
+	config *config.Context
 
 	cmd command.Command
 }
 
-func newCommandLine(config *mdConfig) *commandLine {
-	var c commandLine
+func New(config *config.Context) *Bar {
+	var c Bar
 	c.input = textinput.New()
 	c.input.Prompt = ""
 	c.config = config
@@ -23,18 +24,18 @@ func newCommandLine(config *mdConfig) *commandLine {
 	return &c
 }
 
-func (l *commandLine) focus() tea.Cmd {
+func (l *Bar) Focus() tea.Cmd {
 	return l.input.Focus()
 }
 
-func (l *commandLine) update(msg tea.Msg) tea.Cmd {
+func (l *Bar) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		// prompt handle finish, tell main model, do next action.
-		case key.Matches(msg, l.config.keymap.CommandLineKeyMap.Cr):
-			// todo modeCommand dispatch
-			cmd := l.dispatch()
+		// Prompt handle finish, tell main model, do next action.
+		case key.Matches(msg, l.config.Keymap.CommandLineKeyMap.Cr):
+			// todo modeCommand Dispatch
+			cmd := l.Dispatch()
 			return func() tea.Msg {
 				return cmd
 			}
@@ -46,18 +47,18 @@ func (l *commandLine) update(msg tea.Msg) tea.Cmd {
 	return cmd
 }
 
-func (l *commandLine) view() string {
+func (l *Bar) View() string {
 	return l.input.View()
 }
 
-func (l *commandLine) show() {
+func (l *Bar) Show() {
 	l.input.SetValue("")
 	l.input.Prompt = ":"
 	l.cmd = nil
 	l.input.SetCursorMode(textinput.CursorBlink)
 }
 
-func (l *commandLine) hide() {
+func (l *Bar) Hide() {
 	l.input.Blur()
 	l.input.SetValue("")
 	l.input.Prompt = ""
@@ -65,24 +66,24 @@ func (l *commandLine) hide() {
 	l.input.SetCursorMode(textinput.CursorHide)
 }
 
-// prompt focus someone Command,
+// Prompt Focus someone Command,
 // get teh user input and send it to the main ui to execute it.
-func (l *commandLine) prompt(command command.Command) tea.Cmd {
-	l.show()
+func (l *Bar) Prompt(command command.Command) tea.Cmd {
+	l.Show()
 	l.cmd = command
 	l.input.Prompt = command.Prompt()
-	return l.focus()
+	return l.Focus()
 }
 
-// dispatch user press CommandLineKeyMap.Cr,
+// Dispatch user press CommandLineKeyMap.Cr,
 // means that the user has confirmed the input,
-// so we have to dispatch to the specific Command.
-func (l *commandLine) dispatch() command.Command {
+// so we have to Dispatch to the specific Command.
+func (l *Bar) Dispatch() command.Command {
 	if l.cmd != nil {
 		l.cmd.SetValue(l.input.Value())
 		return l.cmd
 	}
 
-	// todo dispatch
+	// todo Dispatch
 	return &command.Unknown{}
 }

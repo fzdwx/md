@@ -1,4 +1,4 @@
-package main
+package ui
 
 import (
 	_ "embed"
@@ -6,73 +6,63 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/fzdwx/md/command"
+	"github.com/fzdwx/md/config"
+	"github.com/fzdwx/md/ui/common/doc"
+	"github.com/fzdwx/md/ui/common/mode"
+	"github.com/fzdwx/md/ui/components/commandline"
+	"github.com/fzdwx/md/ui/components/preview"
+	"github.com/fzdwx/md/ui/components/statueline"
 	"github.com/fzdwx/md/utils"
 )
 
 //go:embed Default.md
 var welcomeContent string
 
-type mode int
-
-func (m mode) String() string {
-	return []string{
-		"COMMAND",
-		"INSERT",
-		"NORMAL",
-	}[m]
-}
-
-const (
-	modeCommand mode = iota
-	modeInsert
-	modeNormal
-)
-
 type errMsg error
 
 type model struct {
-	config *mdConfig
+	config *config.Context
 	err    errMsg
 
-	width              int  // the terminal max width
-	height             int  // the terminal max height
-	mode               mode // current mode
+	width              int       // the terminal max width
+	height             int       // the terminal max height
+	mode               mode.Mode // current mode
 	showWelcomeContent bool
 	showPreview        bool
 
 	writeArea   textarea.Model
-	previewView *previewView
-	commandLine *commandLine
-	statusLine  *statusLine
+	previewView *preview.View
+	commandLine *commandline.Bar
+	statusLine  *statueline.Bar
 
-	md *markdown // current edit markdown file
+	md *doc.Markdown // current edit markdown file
 }
 
-// initialModel
-func initialModel(config *mdConfig) *model {
+// New ui
+func New(config *config.Context) *model {
 	m := model{}
 	m.config = config
-	m.showWelcomeContent = config.showWelcomeContent()
-	m.mode = modeNormal
-	m.md = defaultMd()
-	m.previewView = newPreviewView(config)
-	m.statusLine = newStatusLine(config)
-	m.commandLine = newCommandLine(config)
+	m.showWelcomeContent = config.ShouldShowWelcomeContent()
+	m.mode = mode.Normal
+	m.md = doc.DefaultMd()
+	m.previewView = preview.New(config)
+	m.statusLine = statueline.New(config)
+	m.commandLine = commandline.New(config)
 	return &m
 }
 
 func (m *model) Init() tea.Cmd {
 	m.writeArea = textarea.New()
-	m.writeArea.KeyMap = m.config.keymap.InsertModeKeyMap
+	m.writeArea.KeyMap = m.config.Keymap.InsertModeKeyMap
 
 	if m.showWelcomeContent {
-		m.md = defaultMd()
+		m.md = doc.DefaultMd()
 		m.previewView.SetContent(welcomeContent)
 		return nil
 	} else {
-		m.md, m.err = filePathToMd(m.config.filePath)
-		m.writeArea.SetValue(m.md.body)
-		m.previewView.SetContent(m.md.body)
+		m.md, m.err = doc.FilePathToMd(m.config.InitFilePath)
+		m.writeArea.SetValue(m.md.Body)
+		m.previewView.SetContent(m.md.Body)
 		m.refreshStatusLine()
 	}
 
@@ -88,7 +78,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.toNormalMode()
 		switch msg.(type) {
 		case *command.SaveFile:
-			m.md.fileName = msg.Value()
+			m.md.FileName = msg.Value()
 			m.savefile()
 			m.refreshStatusLine()
 			return m, nil
@@ -97,31 +87,31 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resize(msg)
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.config.keymap.Quit):
+		case key.Matches(msg, m.config.Keymap.Quit):
 			return m, tea.Quit
-		case key.Matches(msg, m.config.keymap.SaveFile):
+		case key.Matches(msg, m.config.Keymap.SaveFile):
 			if !m.showWelcomeContent {
-				if m.md.noName() {
+				if m.md.NoName() {
 					return m, m.prompt(&command.SaveFile{}) // todo 使用 modeCommand 模式 获取输入内容
 				}
 				m.savefile()
 				return m, nil
 			}
-		case key.Matches(msg, DefaultKeyMap.PreviewView):
+		case key.Matches(msg, m.config.Keymap.PreviewView):
 			m.showPreview = !m.showPreview
 			return m, nil
-		case key.Matches(msg, DefaultKeyMap.ToCommandMode):
+		case key.Matches(msg, m.config.Keymap.ToCommandMode):
 			//if m.mode == modeNormal && !m.showWelcomeContent {
 			//	m.toCommandMode()
-			//	return m, m.commandLine.focus()
+			//	return m, m.Bar.Focus()
 			//}
-			// allow in welcome view use command mode
+			// allow in welcome View use command mode
 			m.toCommandMode()
-			return m, m.commandLine.focus()
-		case key.Matches(msg, DefaultKeyMap.ToNormalMode):
+			return m, m.commandLine.Focus()
+		case key.Matches(msg, m.config.Keymap.ToNormalMode):
 			m.toNormalMode()
-		case key.Matches(msg, DefaultKeyMap.ToInsertMode):
-			if m.mode == modeNormal {
+		case key.Matches(msg, m.config.Keymap.ToInsertMode):
+			if m.mode == mode.Normal {
 				m.toInsertMode()
 				return m, nil
 			}
@@ -132,13 +122,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.mode {
-	case modeInsert:
+	case mode.Insert:
 		m.writeArea, cmd = m.writeArea.Update(msg)
 		cmds = append(cmds, cmd)
 
 		m.previewView.SetContent(m.writeArea.Value())
-	case modeCommand:
-		cmd = m.commandLine.update(msg)
+	case mode.Command:
+		cmd = m.commandLine.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -161,10 +151,10 @@ func (m *model) View() string {
 		} else {
 			buffer.Write(m.writeArea.View())
 		}
-		buffer.NewLine().Write(m.statusLine.view())
+		buffer.NewLine().Write(m.statusLine.View())
 	}
 
-	return buffer.NewLine().Write(m.commandLine.view()).String()
+	return buffer.NewLine().Write(m.commandLine.View()).String()
 }
 
 func (m *model) resize(msg tea.WindowSizeMsg) {
@@ -178,13 +168,13 @@ func (m *model) resize(msg tea.WindowSizeMsg) {
 }
 
 func (m *model) toCommandMode() {
-	m.mode = modeCommand
-	m.commandLine.show()
+	m.mode = mode.Command
+	m.commandLine.Show()
 	m.refreshStatusLine()
 }
 
 func (m *model) toInsertMode() {
-	m.mode = modeInsert
+	m.mode = mode.Insert
 	if m.showWelcomeContent {
 		m.showWelcomeContent = false
 	}
@@ -194,28 +184,28 @@ func (m *model) toInsertMode() {
 }
 
 func (m *model) toNormalMode() {
-	m.mode = modeNormal
+	m.mode = mode.Normal
 	m.writeArea.Blur()
-	m.commandLine.hide()
+	m.commandLine.Hide()
 }
 
 func (m *model) prompt(cmd command.Command) tea.Cmd {
-	m.mode = modeCommand
+	m.mode = mode.Command
 	m.writeArea.Blur()
 	m.refreshStatusLine()
-	return m.commandLine.prompt(cmd)
+	return m.commandLine.Prompt(cmd)
 }
 
 func (m *model) hideCommandLine() {
-	m.commandLine.hide()
+	m.commandLine.Hide()
 }
 
 func (m *model) refreshStatusLine() {
 	area := m.writeArea
-	m.statusLine.refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
+	m.statusLine.Refresh(m.md, m.width, m.height, m.mode, area.Line(), area.LineInfo().ColumnOffset, area.LineCount())
 }
 
 func (m *model) savefile() {
-	m.md.body = m.writeArea.Value()
-	m.err = m.md.save()
+	m.md.Body = m.writeArea.Value()
+	m.err = m.md.Save()
 }
