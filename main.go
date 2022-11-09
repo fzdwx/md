@@ -9,6 +9,14 @@ import (
 )
 
 func main() {
+
+	f, err := tea.LogToFile("debug.log", "debug")
+	if err != nil {
+		fmt.Println("fatal:", err)
+		os.Exit(1)
+	}
+	defer f.Close()
+
 	cfg := config.Parse()
 
 	p := tea.NewProgram(ui.New(cfg), tea.WithAltScreen())

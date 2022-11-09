@@ -154,7 +154,7 @@ func (m *model) View() string {
 	if m.showPreview { // todo 当前只是简单的处理, 默认是左右视图
 		if m.width >= 160 {
 			val := lipgloss.JoinHorizontal(lipgloss.Top,
-				lipgloss.NewStyle().AlignHorizontal(lipgloss.Right).Render(m.writeArea.View()),
+				lipgloss.NewStyle().AlignHorizontal(lipgloss.Right).Render(utils.TimeIt(m.writeArea.View)),
 				lipgloss.NewStyle().AlignHorizontal(lipgloss.Left).Render(m.previewView.View()),
 			)
 			buffer.Write(val)

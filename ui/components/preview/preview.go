@@ -36,7 +36,6 @@ func (v *View) SetContent(content string) {
 }
 
 func (v *View) View() string {
-	v.RenderMarkdown()
 	return v.viewport.View()
 }
 
