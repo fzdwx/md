@@ -2,6 +2,13 @@
 
 tui markdown editor.
 
+## install
+
+```shell
+go install github.com/fzdwx/md@main
+```
+
+## preview
 ![show](../utils/show.gif)
 
 --- 
