@@ -9,7 +9,7 @@ go install github.com/fzdwx/md@main
 ```
 
 ## preview
-![show](../utils/show.gif)
+![show](show.gif)
 
 --- 
 
