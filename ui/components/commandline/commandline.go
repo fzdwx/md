@@ -1,6 +1,7 @@
 package commandline
 
 import (
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -55,7 +56,7 @@ func (l *Bar) Show() {
 	l.input.SetValue("")
 	l.input.Prompt = ":"
 	l.cmd = nil
-	l.input.SetCursorMode(textinput.CursorBlink)
+	l.input.Cursor.SetMode(cursor.CursorBlink)
 }
 
 func (l *Bar) Hide() {
@@ -63,7 +64,7 @@ func (l *Bar) Hide() {
 	l.input.SetValue("")
 	l.input.Prompt = ""
 	l.cmd = nil
-	l.input.SetCursorMode(textinput.CursorHide)
+	l.input.Cursor.SetMode(cursor.CursorHide)
 }
 
 // Prompt Focus someone Command,
@@ -79,11 +80,11 @@ func (l *Bar) Prompt(command command.Command) tea.Cmd {
 // means that the user has confirmed the input,
 // so we have to Dispatch to the specific Command.
 func (l *Bar) Dispatch() command.Command {
+	value := l.input.Value()
 	if l.cmd != nil {
-		l.cmd.SetValue(l.input.Value())
+		l.cmd.SetValue(value)
 		return l.cmd
 	}
 
-	// todo Dispatch
-	return &command.Unknown{}
+	return command.ParseCommand(value)
 }

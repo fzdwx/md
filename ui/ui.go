@@ -80,24 +80,33 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.toNormalMode()
 		switch msg.(type) {
 		case *command.SaveFile:
-			m.md.FileName = msg.Value()
+			newFilename := msg.Value()
+			if m.md.NoName() && newFilename == "" {
+				return m, m.rerunCommand(msg) // rerun, get new filename
+			}
+
+			m.md.FileName = newFilename
 			m.savefile()
 			m.refreshStatusLine()
 			return m, nil
+		case *command.Quit:
+			return m.quit()
 		}
+
 	case tea.WindowSizeMsg:
 		m.setsize(msg)
+
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, m.config.Keymap.Quit):
-			return m, tea.Quit
+		//case key.Matches(msg, m.config.Keymap.Quit):
+		//	return m.quit()
 		case key.Matches(msg, m.config.Keymap.SaveFile):
 			if m.showWelcomeContent {
 				return m, nil
 			}
 
 			if m.md.NoName() {
-				return m, m.prompt(&command.SaveFile{}) // todo 使用 modeCommand 模式 获取输入内容
+				return m, m.rerunCommand(&command.SaveFile{})
 			}
 			m.savefile()
 			return m, nil
@@ -110,8 +119,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			//	return m, m.Bar.Focus()
 			//}
 			// allow in welcome View use command mode
-			m.toCommandMode()
-			return m, m.commandLine.Focus()
+			if m.mode == mode.Normal {
+				m.toCommandMode()
+				return m, m.commandLine.Focus()
+			}
 		case key.Matches(msg, m.config.Keymap.ToNormalMode):
 			m.toNormalMode()
 		case key.Matches(msg, m.config.Keymap.ToInsertMode):
@@ -120,6 +131,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+
 	case errMsg:
 		m.err = msg
 		return m, nil
@@ -131,9 +143,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 
 		m.previewView.SetContent(m.writeArea.Value())
+
 	case mode.Command:
 		cmd = m.commandLine.Update(msg)
 		cmds = append(cmds, cmd)
+
 	}
 
 	if !m.showWelcomeContent {
@@ -141,6 +155,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *model) quit() (tea.Model, tea.Cmd) {
+	return m, tea.Quit
 }
 
 func (m *model) View() string {
@@ -216,7 +234,8 @@ func (m *model) toNormalMode() {
 	m.commandLine.Hide()
 }
 
-func (m *model) prompt(cmd command.Command) tea.Cmd {
+// rerunCommand Used to get user input, and execute the corresponding command.
+func (m *model) rerunCommand(cmd command.Command) tea.Cmd {
 	m.mode = mode.Command
 	m.writeArea.Blur()
 	m.refreshStatusLine()

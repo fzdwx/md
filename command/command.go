@@ -1,5 +1,19 @@
 package command
 
+import "strings"
+
+func ParseCommand(cmd string) Command {
+	cmd = strings.TrimPrefix(cmd, ":")
+	switch cmd {
+	case "w":
+		return &SaveFile{}
+	case "q":
+		return &Quit{}
+	default:
+		return &Unknown{}
+	}
+}
+
 type Command interface {
 	// Prompt will show commandLine prompt
 	Prompt() string
